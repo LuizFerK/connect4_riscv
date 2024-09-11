@@ -296,36 +296,80 @@ setup_print_board:
 			
 			la a0, board
 			li t1, 1
-			bne s8, t1, board9
+			bne s8, t1, print_board9
 			li a1, 7
-			j set_board
-board9:
+			j print_set_board
+print_board9:
 			li a1, 9
-set_board:
+print_set_board:
 			# a0 <- board address
 			# a1 <- board columns
 			call print_board
 			
 			mv ra, s10
 			ret
+			
 # ======================== PRINT BOARD ===========================
 print_board:
-			li s1, 5 # s1 <- max row index
-			sub s2, a1, 1 # s2 <- max column index
+			mv s6, ra
+			mv s5, a0
+
+			li s1, 6 # s1 <- max row index
+			mv s2, a1 # s2 <- max column index
 			
 			li s3, 0 # s3 <- current row index
-			li s4, 0 # s4 <- current column index
+			
+			la a0, linebreak
+			li a7, 4
+			ecall
 			
 print_board_row_loop:
 			beq s3, s1, end_print_board_row_loop
 			
+			call board_column
 			
+			la a0, linebreak
+			li a7, 4
+			ecall
 			
-			add s3, s3, 1
+			addi s3, s3, 1
 			j print_board_row_loop
 end_print_board_row_loop:
+			mv a0, s5
+			mv ra, s6
 			ret
 			
+# ======================== PRINT BOARD COLUMN ===========================
+board_column:
+			# s1 <- max row index
+			# s2 <- max column index
+			# s3 <- current row index
+			li s4, 0 # s4 <- current column index
+			
+board_column_loop:
+			beq s4, s2, end_board_column_loop
+			
+			add t1, s3, s3
+			add t1, t1, t1 # t1 <- row address
+			
+			li t2, 24
+			mul t2, s4, t2 # t2 <- column address
+			
+			add t3, t2, t1
+			add t3, s5, t3 # t3 <- cell address
+			
+			lw a0, 0(t3)
+			li a7, 1
+			ecall
+			
+			la a0, space
+			li a7, 4
+			ecall
+			
+			addi s4, s4, 1
+			j board_column_loop
+end_board_column_loop:
+			ret	
 		
 # ======================== END ===========================
 end:
