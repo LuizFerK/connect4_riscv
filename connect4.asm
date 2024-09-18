@@ -255,11 +255,24 @@ play:
 			# a1 <- board size
 			call setup_board
 			call setup_print_board
+
+			mv t5, a0
 			
 			# a2 <- current player
 			li a2, 1
 
 round_loop:
+			# ask player to choose a column
+			la a0, choose_column
+			li a7, 4
+			ecall
+			li a7, 5
+			ecall
+			# a0 <- column index
+
+			mv a3, a0
+			mv a0, t5
+
 			call round
 			call setup_print_board
 
@@ -269,6 +282,13 @@ round_loop:
 			j skip_player_swap
 
 swap_to_player_2:
+			li t4, 1
+			bne s7, t4, skip_bot_round
+			call bot_round
+
+			j skip_player_swap
+
+skip_bot_round:
 			li a2, 2
 
 skip_player_swap:
@@ -394,22 +414,17 @@ round:
 			# a0 <- board address
 			# a1 <- board size
 			# a2 <- current player
+			# a3 <- column index
+
 			mv s10, a0
 			mv t3, ra
 
-			la a0, choose_column
-			li a7, 4
-			ecall
-			li a7, 5
-			ecall
-			# a0 <- column index
-
-			blt a0, zero, column_index_error
+			blt a3, zero, column_index_error
 			addi t2, a1, -1
-			bgt a0, t2, column_index_error
+			bgt a3, t2, column_index_error
 			
 			li s0, 24
-			mul s0, a0, s0
+			mul s0, a3, s0
 			add s0, s0, s10 # s0 <- first cell of selected column address
 			lw t2, 0(s0) # t2 <- first cell of selected column
 
@@ -429,7 +444,7 @@ column_full:
 			li a7, 4
 			ecall
 			mv a0, s10
-			j round
+			j round_loop
 
 column_index_error:
 			# no valid column, return to round
@@ -437,7 +452,7 @@ column_index_error:
 			li a7, 4
 			ecall
 			mv a0, s10
-			j round
+			j round_loop
 
 # ======================== INSERT LOOP ===========================
 insert_loop:
@@ -454,6 +469,30 @@ skip_cell:
 			j insert_loop
 
 end_insert_loop:
+			ret
+
+# ======================== BOT ROUND ===========================
+bot_round:
+			mv t6, ra
+			mv t0, a0
+			mv t1, a1
+
+			# li a3, 1 # TEMP (need to choose a not empty column)
+			# # (if all columns are empty (pass 50 attempts): end game with tie)
+			li a0, 0
+			li a1, 7
+			li a7, 42
+			ecall
+
+			mv a3, a0
+			li a2, 2 # bot plays with player 2
+			mv a1, t1
+			mv a0, t0
+			call round
+
+			li a2, 1 # after the bot play, switch back to player 1
+			
+			mv ra, t6
 			ret
 
 # ======================== END ===========================
