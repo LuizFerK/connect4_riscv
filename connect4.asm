@@ -13,13 +13,15 @@ board_7x6_text:		.asciz		"Tabuleiro 7x6"
 difficulty_text:	.asciz		"\nEscolha a dificuldade:\n\n1 - Fácil\n2 - Médio\n\nOpção: "
 easy_text:		.asciz		"Fácil"
 medium_text:		.asciz		"Médio"
+choose_column:	.asciz		"\nEscolha uma coluna: "
+column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
 linebreak:		.asciz		"\n"
 space:			.asciz		" "
 			.text
 # ======================== MAIN MENU ===========================
 			# config defaults
 			li s7, 1 # 1 player
-			li s8, 1 # 7x6 board
+			li s8, 7 # 7x6 board
 			li s9, 1 # easy
 
 main:
@@ -137,8 +139,8 @@ invalid_players:
 			j players_config
 			
 # ======================== SET BOARD ===========================
-# s8 <- 1: 7x6
-# s8 <- 2: 9x6
+# s8 <- 7: 7x6
+# s8 <- 9: 9x6
 board_config:
 			# ask for board size
 			la a0, board_text
@@ -149,10 +151,13 @@ board_config:
 			li a7, 5
 			ecall
 			
-			li s2, 1
-			li s3, 2
-			blt a0, s2, invalid_board
-			bgt a0, s3, invalid_board
+			li s2, 7
+			bne a0, s2, not_7
+			mv s8, a0
+			ret
+not_7:
+			li s3, 9
+			bne a0, s3, invalid_board
 			mv s8, a0
 			ret
 invalid_board:
@@ -208,7 +213,7 @@ print_config:
 			ecall
 		
 			# print board size
-			li s3, 1
+			li s3, 7
 			bne s8, s3, print_9x6
 			la a0, board_7x6_text
 			li a7, 4
@@ -245,9 +250,34 @@ skip_difficulty_print:
 # ======================== PLAY ===========================
 play:
 			mv s11, ra
+
+			# a0 <- board address
+			# a1 <- board size
 			call setup_board
 			call setup_print_board
 			
+			# a2 <- current player
+			li a2, 1
+
+round_loop:
+			call round
+			call setup_print_board
+
+			li t1, 1
+			beq a2, t1, swap_to_player_2
+			li a2, 1
+			j skip_player_swap
+
+swap_to_player_2:
+			li a2, 2
+
+skip_player_swap:
+			# call check_win
+			# beq to check if the game ends (go to end_round_loop)
+
+			j round_loop
+
+end_round_loop:
 			mv ra, s11
 			ret
 			
@@ -256,13 +286,7 @@ setup_board:
 			mv s10, ra
 			
 			la a0, board
-			li t1, 1
-			bne s8, t1, board9
-			li a1, 7
-			j set_board
-board9:
-			li a1, 9
-set_board:
+			mv a1, s8
 			# a0 <- board address
 			# a1 <- board columns
 			call build_board
@@ -295,13 +319,7 @@ setup_print_board:
 			mv s10, ra
 			
 			la a0, board
-			li t1, 1
-			bne s8, t1, print_board9
-			li a1, 7
-			j print_set_board
-print_board9:
-			li a1, 9
-print_set_board:
+			mv a1, s8
 			# a0 <- board address
 			# a1 <- board columns
 			call print_board
@@ -370,7 +388,74 @@ board_column_loop:
 			j board_column_loop
 end_board_column_loop:
 			ret	
-		
+
+# ======================== ROUND ===========================
+round:
+			# a0 <- board address
+			# a1 <- board size
+			# a2 <- current player
+			mv s10, a0
+			mv t3, ra
+
+			la a0, choose_column
+			li a7, 4
+			ecall
+			li a7, 5
+			ecall
+			# a0 <- column index
+
+			blt a0, zero, column_index_error
+			addi t2, a1, -1
+			bgt a0, t2, column_index_error
+			
+			li s0, 24
+			mul s0, a0, s0
+			add s0, s0, s10 # s0 <- first cell of selected column address
+			lw t2, 0(s0) # t2 <- first cell of selected column
+
+			bne t2, zero, column_full
+
+			addi s0, s0, 20
+
+			call insert_loop
+
+			mv a0, s10
+			mv ra, t3
+			ret
+			
+column_full:
+			# column full, return to round
+			la a0, column_full_text
+			li a7, 4
+			ecall
+			mv a0, s10
+			j round
+
+column_index_error:
+			# no valid column, return to round
+			la a0, invalid_opt_text
+			li a7, 4
+			ecall
+			mv a0, s10
+			j round
+
+# ======================== INSERT LOOP ===========================
+insert_loop:
+			# s0 <- current cell address
+			lw t2, 0(s0) # t2 <- current cell value
+			bne t2, zero, skip_cell
+
+			sw a2, 0(s0) # put player on cell
+
+			j end_insert_loop
+
+skip_cell:
+			addi s0, s0, -4
+			j insert_loop
+
+end_insert_loop:
+			ret
+
 # ======================== END ===========================
 end:
 			li a7, 10
