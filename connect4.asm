@@ -17,12 +17,12 @@ linebreak:		.asciz		"\n"
 space:			.asciz		" "
 			.text
 # ======================== MAIN MENU ===========================
-main:
 			# config defaults
 			li s7, 1 # 1 player
 			li s8, 1 # 7x6 board
 			li s9, 1 # easy
 
+main:
 			# print menu
 			la a0, menu_text
 			li a7, 4
