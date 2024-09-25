@@ -422,7 +422,7 @@ round:
 			blt a3, zero, column_index_error
 			addi t2, a1, -1
 			bgt a3, t2, column_index_error
-			
+
 			li s0, 24
 			mul s0, a3, s0
 			add s0, s0, s10 # s0 <- first cell of selected column address
@@ -477,18 +477,26 @@ bot_round:
 			mv t0, a0
 			mv t1, a1
 
-			# li a3, 1 # TEMP (need to choose a not empty column)
-			# # (if all columns are empty (pass 50 attempts): end game with tie)
+bot_round_rand_num:
+			# a0 <- random number between 0 and 6 or 8
 			li a0, 0
-			li a1, 7
+			mv a1, s8
 			li a7, 42
 			ecall
 
+			li t2, 24
+			mul t2, a0, t2
+			add t2, t2, t0
+			lw t2, 0(t2) # t2 <- value of the first cell on selected column
+
+			bne t2, zero, bot_round_rand_num
+
 			mv a3, a0
-			li a2, 2 # bot plays with player 2
+			li a2, 2 # bot plays as player 2
 			mv a1, t1
 			mv a0, t0
 			call round
+			call setup_print_board
 
 			li a2, 1 # after the bot play, switch back to player 1
 			
