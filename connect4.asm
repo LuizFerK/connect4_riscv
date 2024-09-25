@@ -292,9 +292,6 @@ skip_bot_round:
 			li a2, 2
 
 skip_player_swap:
-			# call check_win
-			# beq to check if the game ends (go to end_round_loop)
-
 			j round_loop
 
 end_round_loop:
@@ -331,6 +328,7 @@ build_board_loop:
 			
 			addi s1, s1, 1
 			j build_board_loop
+
 end_build_board_loop:
 			ret
 			
@@ -434,6 +432,10 @@ round:
 
 			call insert_loop
 
+			# return the check result in a register
+			call check_end
+			# beq to check if the game ends (go to main_menu)
+
 			mv a0, s10
 			mv ra, t3
 			ret
@@ -501,6 +503,9 @@ bot_round_rand_num:
 			li a2, 1 # after the bot play, switch back to player 1
 			
 			mv ra, t6
+			ret
+
+check_end:
 			ret
 
 # ======================== END ===========================
