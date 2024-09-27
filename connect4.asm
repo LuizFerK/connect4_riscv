@@ -151,14 +151,16 @@ board_config:
 			li a7, 5
 			ecall
 			
-			li s2, 7
+			li s2, 1
 			bne a0, s2, not_7
-			mv s8, a0
+			li s2, 7
+			mv s8, s2
 			ret
 not_7:
-			li s3, 9
+			li s3, 2
 			bne a0, s3, invalid_board
-			mv s8, a0
+			li s3, 9
+			mv s8, s3
 			ret
 invalid_board:
 			la a0, invalid_opt_text
