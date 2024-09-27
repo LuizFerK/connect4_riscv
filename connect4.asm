@@ -537,6 +537,8 @@ end_check_tie_loop:
 			ret
 
 tie:
+			call setup_print_board
+			
 			la a0, tie_text
 			li a7, 4
 			ecall
