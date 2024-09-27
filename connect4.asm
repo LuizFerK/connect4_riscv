@@ -15,6 +15,7 @@ easy_text:		.asciz		"Fácil"
 medium_text:		.asciz		"Médio"
 choose_column:	.asciz		"\nEscolha uma coluna: "
 column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
+tie_text:			.asciz		"\nEmpate!\n"
 linebreak:		.asciz		"\n"
 space:			.asciz		" "
 			.text
@@ -508,7 +509,39 @@ bot_round_rand_num:
 			ret
 
 check_end:
+			mv t0, ra
+
+			call check_tie
+			# outras verificacoes
+
+			mv ra, t0
 			ret
+
+check_tie:
+			li t1, 0
+
+check_tie_loop:
+			beq t1, s8, tie
+
+			li t2, 24
+			mul t2, t2, t1
+			add t2, t2, s10
+			lw t2, 0(t2) # t2 <- value of the first cell in each column
+
+			beq t2, zero, end_check_tie_loop
+
+			addi t1, t1, 1
+			j check_tie_loop
+
+end_check_tie_loop:
+			ret
+
+tie:
+			la a0, tie_text
+			li a7, 4
+			ecall
+
+			j main
 
 # ======================== END ===========================
 end:
