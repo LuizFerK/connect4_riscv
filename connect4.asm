@@ -737,14 +737,23 @@ check_diag_loop:
 			beq s5, t2, end_check_diag_loop
 
 			call diag_desc
+			la a0, space
+			li a7, 4
+			ecall
 			addi s6, s6, 20
 			call diag_asc
+			la a0, space
+			li a7, 4
+			ecall
 			addi s6, s6, 4
 
 			addi s5, s5, 1
 			j check_diag_loop
 
 end_check_diag_loop:
+			la a0, linebreak
+			li a7, 4
+			ecall
 			mv ra, a5
 			ret
 
@@ -761,6 +770,12 @@ diag_desc_loop:
 			li s0, 28
 			mul s0, a6, s0
 			add s0, s0, s6
+
+			# address should not exceed 212 of displacement
+			sub s4, s0, s10
+			li a7, 212
+			bgt s4, a7, skip_diag_desc_cell
+
 			lw s0, 0(s0)
 
 			beq s0, zero, diag_desc_reset_count
@@ -804,7 +819,17 @@ diag_asc_loop:
 			li s0, 20
 			mul s0, a6, s0
 			add s0, s0, s6
+
+			# address should not exceed 212 of displacement
+			sub s4, s0, s10
+			li a7, 212
+			bgt s4, a7, skip_diag_desc_cell
+			
 			lw s0, 0(s0)
+
+			mv a0, s0
+			li a7, 1
+			ecall
 
 			beq s0, zero, diag_asc_reset_count
 			beq s0, t4, diag_skip_change_player
