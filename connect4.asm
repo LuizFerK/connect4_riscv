@@ -16,6 +16,8 @@ medium_text:		.asciz		"Médio"
 choose_column:	.asciz		"\nEscolha uma coluna: "
 column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
 tie_text:			.asciz		"\nEmpate!\n"
+player_text:			.asciz		"\O jogador "
+win_text:			.asciz		" venceu!\n"
 linebreak:		.asciz		"\n"
 space:			.asciz		" "
 			.text
@@ -512,6 +514,7 @@ check_end:
 			mv t0, ra
 
 			call check_tie
+			call check_col
 			# outras verificacoes
 
 			mv ra, t0
@@ -538,12 +541,64 @@ end_check_tie_loop:
 
 tie:
 			call setup_print_board
-			
+
 			la a0, tie_text
 			li a7, 4
 			ecall
 
 			j main
+
+check_col:
+			li t1, 0
+			li t3, 6
+			li t4, 1 # t4 <- last player
+			li t6, 2 # t6 <- player to swap
+			li t5, 0 # t5 <- consecutive player cell
+			li a6, 4
+
+check_col_loop:
+			beq t1, t3, end_check_col_loop
+			beq t5, a6, current_player_win
+
+			add t2, t1, t1
+			add t2, t2, t2
+			add t2, t2, s10
+			lw t2, 0(t2) # t2 <- current value of the column
+
+			beq t2, zero, skip_col_cell
+
+			beq t2, t4, skip_change_player
+
+			# swap current player
+			mv a5, t4
+			mv t4, t6
+			mv t6, a5
+
+skip_change_player:
+			addi t5, t5, 1
+skip_col_cell:
+			addi t1, t1, 1
+			j check_col_loop
+
+end_check_col_loop:
+			ret
+
+current_player_win:
+			# t4 <- current player
+			call setup_print_board
+
+			la a0, player_text
+			li a7, 4
+			ecall
+			mv a0, t4
+			li a7, 1
+			ecall
+			la a0, win_text
+			li a7, 1
+			ecall
+
+			j main
+
 
 # ======================== END ===========================
 end:
