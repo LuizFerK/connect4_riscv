@@ -1,8 +1,13 @@
 			.data
 board:			.space		216
+player1_wins:			.word			0
+player2_wins:			.word			0
+player1_text:		.asciz		"\nPlayer 1: "
+player2_text:		.asciz		"Player 2: "
+wins_text:		.asciz		" vitórias\n"
 menu_text:		.asciz		"\nFila 4 - Menu principal:\n\n1 - Configurações\n2 - Jogar\n3 - Sair\n\nOpção: "
 invalid_opt_text:	.asciz		"\nOpção inválida!\n"
-config_menu_text:	.asciz		"\nConfigurações:\n\n1 - Quantidade de jogadores\n2 - Tamanho do tabuleiro\n3 - Dificuldade\n4 - Zerar contadores\n5 - Ver configurações\n6 - Voltar\n\nOpção: "
+config_menu_text:	.asciz		"\nConfigurações:\n\n1 - Quantidade de jogadores\n2 - Tamanho do tabuleiro\n3 - Dificuldade\n4 - Zerar placar\n5 - Ver configurações\n6 - Voltar\n\nOpção: "
 players_text:		.asciz		"\nEscolha a quantidade de jogadores: (1 ou 2): "
 print_players_text:	.asciz		"\nQuantidade de jogadores: "
 print_board_text:	.asciz		"\nTamanho do tabuleiro: "
@@ -198,6 +203,11 @@ invalid_difficulty:
 			
 # ======================== RESET COUNT ===========================
 reset_count:
+			la t0, player1_wins
+			sw zero, 0(t0)
+			la t0, player1_wins
+			sw zero, 0(t0)
+
 			ret
 			
 # ======================== PRINT CONFIG ===========================
@@ -251,10 +261,49 @@ skip_difficulty_print:
 			ecall
 			
 			ret
-			
+
+# ======================== PRINT SCOREBOARD ===========================
+print_scoreboard:
+			mv t0, a0
+			mv t1, a1
+
+			# player 1 wins
+			la a0, player1_text
+			li a7, 4
+			ecall
+
+			la a0, player1_wins
+			lw a0, 0(a0)
+			li a7, 1
+			ecall
+
+			la a0, wins_text
+			li a7, 4
+			ecall
+
+			# player 2 wins
+			la a0, player2_text
+			li a7, 4
+			ecall
+
+			la a0, player2_wins
+			lw a0, 0(a0)
+			li a7, 1
+			ecall
+
+			la a0, wins_text
+			li a7, 4
+			ecall
+
+			mv a0, t0
+			mv a1, t1
+			ret
+
 # ======================== PLAY ===========================
 play:
 			mv s11, ra
+
+			call print_scoreboard
 
 			# a0 <- board address
 			# a1 <- board size
@@ -317,6 +366,9 @@ setup_board:
 			ret
 			
 # ======================== BUILD BOARD ===========================
+# inicia_tabuleiro
+# a0 <- board address
+# a1 <- board columns
 build_board:
 			li t2, 6
 			mul s2, a1, t2 # s2 <- board cells
@@ -351,6 +403,9 @@ setup_print_board:
 			ret
 			
 # ======================== PRINT BOARD ===========================
+# imprime_tabuleiro
+# a0 <- board address
+# a1 <- board columns
 print_board:
 			mv s6, ra
 			mv s5, a0
@@ -363,6 +418,9 @@ print_board:
 			la a0, linebreak
 			li a7, 4
 			ecall
+
+			# TODO: print header line
+			# 0 1 2 3 4 5 6
 			
 print_board_row_loop:
 			beq s3, s1, end_print_board_row_loop
@@ -386,7 +444,7 @@ board_column:
 			# s2 <- max column index
 			# s3 <- current row index
 			li s4, 0 # s4 <- current column index
-			
+
 board_column_loop:
 			beq s4, s2, end_board_column_loop
 			
@@ -399,6 +457,7 @@ board_column_loop:
 			add t3, t2, t1
 			add t3, s5, t3 # t3 <- cell address
 			
+			# TODO: print "-" if 0
 			lw a0, 0(t3)
 			li a7, 1
 			ecall
@@ -510,17 +569,21 @@ bot_round_rand_num:
 			mv ra, t6
 			ret
 
+# ======================== CHECK IF THE GAME ENDED ===========================
+# verifica_vencedor
+# TODO: params and returns
 check_end:
 			mv t0, ra
 
 			call check_tie
 			call check_cols
 			call check_rows
-			# outras verificacoes
+			# call check_diag
 
 			mv ra, t0
 			ret
 
+# ======================== CHECK TIE ===========================
 check_tie:
 			li t1, 0
 
@@ -540,6 +603,7 @@ check_tie_loop:
 end_check_tie_loop:
 			ret
 
+# ======================== TIE GAME ===========================
 tie:
 			call setup_print_board
 
@@ -549,6 +613,7 @@ tie:
 
 			j main
 
+# ======================== CHECK COLS ===========================
 check_cols:
 			mv s11, ra
 			li a4, 0
@@ -565,6 +630,7 @@ end_col_loop:
 			mv ra, s11
 			ret
 
+# ======================== CHECK COL ===========================
 check_col:
 			li t1, 0 # t1 <- current row
 			li a5, 6 # a5 <- rows
@@ -604,6 +670,7 @@ skip_col_cell:
 end_check_col_loop:
 			ret
 
+# ======================== CHECK ROWS ===========================
 check_rows:
 			mv s11, ra
 			li a4, 0
@@ -620,6 +687,7 @@ end_row_loop:
 			mv ra, s11
 			ret
 
+# ======================== CHECK ROW ===========================
 check_row:
 			li t1, 0 # t1 <- current row
 			li a5, 6 # a5 <- rows
@@ -660,10 +728,12 @@ skip_row_cell:
 end_check_row_loop:
 			ret
 
+# ======================== CURRENT PLAYER WINS ===========================
 current_player_win:
 			# t4 <- current player
 			call setup_print_board
 
+			# print who wins
 			la a0, player_text
 			li a7, 4
 			ecall
@@ -673,6 +743,26 @@ current_player_win:
 			la a0, win_text
 			li a7, 4
 			ecall
+
+			# increase player win count
+			li t0, 1
+			beq t4, t0, player_1_wins_game
+
+			la a0, player2_wins
+			lw a1, 0(a0)
+			addi a1, a1, 1
+			sw a1, 0(a0)
+
+			j win_end_if
+
+player_1_wins_game:
+			la a0, player1_wins
+			lw a1, 0(a0)
+			addi a1, a1, 1
+			sw a1, 0(a0)
+
+win_end_if:
+			call print_scoreboard
 
 			j main
 
