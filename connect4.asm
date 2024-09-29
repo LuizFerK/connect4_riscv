@@ -23,6 +23,7 @@ column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
 tie_text:			.asciz		"\nEmpate!\n"
 player_text:			.asciz		"\nO jogador "
 win_text:			.asciz		" venceu!\n"
+dash:		.asciz		"-"
 linebreak:		.asciz		"\n"
 space:			.asciz		" "
 			.text
@@ -419,8 +420,25 @@ print_board:
 			li a7, 4
 			ecall
 
-			# TODO: print header line
-			# 0 1 2 3 4 5 6
+header_loop:
+			beq s3, a1, end_header_loop
+
+			mv a0, s3
+			li a7, 1
+			ecall
+			la a0, space
+			li a7, 4
+			ecall
+
+			addi s3, s3, 1
+			j header_loop
+
+end_header_loop:
+			li s3, 0
+
+			la a0, linebreak
+			li a7, 4
+			ecall
 			
 print_board_row_loop:
 			beq s3, s1, end_print_board_row_loop
@@ -433,6 +451,7 @@ print_board_row_loop:
 			
 			addi s3, s3, 1
 			j print_board_row_loop
+
 end_print_board_row_loop:
 			mv a0, s5
 			mv ra, s6
@@ -457,9 +476,14 @@ board_column_loop:
 			add t3, t2, t1
 			add t3, s5, t3 # t3 <- cell address
 			
-			# TODO: print "-" if 0
 			lw a0, 0(t3)
 			li a7, 1
+
+			bne a0, zero, print_cell_value
+			la a0, dash
+			li a7, 4
+
+print_cell_value:
 			ecall
 			
 			la a0, space
@@ -576,8 +600,8 @@ check_end:
 			mv t0, ra
 
 			call check_tie
-			# call check_cols
-			# call check_rows
+			call check_cols
+			call check_rows
 			call check_diag
 
 			mv ra, t0
