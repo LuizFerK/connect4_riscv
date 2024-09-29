@@ -515,6 +515,7 @@ check_end:
 
 			call check_tie
 			call check_cols
+			call check_rows
 			# outras verificacoes
 
 			mv ra, t0
@@ -552,7 +553,7 @@ check_cols:
 			mv s11, ra
 			li a4, 0
 col_loop:
-			beq a4, s8, end_cool_loop
+			beq a4, s8, end_col_loop
 			li s6, 24
 			mul s6, a4, s6
 			add s6, s6, s10
@@ -560,7 +561,7 @@ col_loop:
 
 			addi a4, a4, 1
 			j col_loop
-end_cool_loop:
+end_col_loop:
 			mv ra, s11
 			ret
 
@@ -578,10 +579,66 @@ check_col_loop:
 			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the column
 
+			# mv a0, s2
+			# li a7, 1
+			# ecall
+			beq t2, zero, skip_col_cell
+			beq t2, t4, col_skip_change_player
+
+			li a7, 1
+			beq t4, a7, col_change_to_two
+			li t4, 1
+			j col_end_swap_if
+col_change_to_two:
+			li t4, 2
+col_end_swap_if:
+			li s2, 0
+
+col_skip_change_player:
+			addi s2, s2, 1
+			beq s2, a6, current_player_win
+skip_col_cell:
+			addi t1, t1, 1
+			j check_col_loop
+
+end_check_col_loop:
+			ret
+
+check_rows:
+			mv s11, ra
+			li a4, 0
+row_loop:
+			beq a4, s8, end_row_loop
+			li s6, 4
+			mul s6, a4, s6
+			add s6, s6, s10
+			call check_row
+
+			addi a4, a4, 1
+			j row_loop
+end_row_loop:
+			mv ra, s11
+			ret
+
+check_row:
+			li t1, 0 # t1 <- current row
+			li a5, 6 # a5 <- rows
+			li t4, 1 # t4 <- last player
+			li s2, 0 # s2 <- consecutive player cell
+			li a6, 4
+
+check_row_loop:
+			beq t1, a5, end_check_row_loop
+
+			li t2, 24
+			mul t2, t2, t1
+			add t2, t2, s6
+			lw t2, 0(t2) # t2 <- current value of the rowumn
+
 			mv a0, s2
 			li a7, 1
 			ecall
-			beq t2, zero, skip_col_cell
+			beq t2, zero, skip_row_cell
 			beq t2, t4, skip_change_player
 
 			li a7, 1
@@ -596,11 +653,11 @@ end_swap_if:
 skip_change_player:
 			addi s2, s2, 1
 			beq s2, a6, current_player_win
-skip_col_cell:
+skip_row_cell:
 			addi t1, t1, 1
-			j check_col_loop
+			j check_row_loop
 
-end_check_col_loop:
+end_check_row_loop:
 			ret
 
 current_player_win:
