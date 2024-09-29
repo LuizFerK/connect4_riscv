@@ -578,7 +578,7 @@ check_end:
 			call check_tie
 			call check_cols
 			call check_rows
-			# call check_diag
+			call check_diag
 
 			mv ra, t0
 			ret
@@ -645,9 +645,6 @@ check_col_loop:
 			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the column
 
-			# mv a0, s2
-			# li a7, 1
-			# ecall
 			beq t2, zero, skip_col_cell
 			beq t2, t4, col_skip_change_player
 
@@ -703,9 +700,6 @@ check_row_loop:
 			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the rowumn
 
-			mv a0, s2
-			li a7, 1
-			ecall
 			beq t2, zero, skip_row_cell
 			beq t2, t4, skip_change_player
 
@@ -726,6 +720,118 @@ skip_row_cell:
 			j check_row_loop
 
 end_check_row_loop:
+			ret
+
+# ======================== CHECK DIAGONALS ===========================
+check_diag:
+			mv a5, ra
+
+			li s5, 0
+
+			mv s6, s10 # s6 <- board address
+
+check_diag_loop:
+			li t2, 3
+			sub t2, s8, t2
+
+			beq s5, t2, end_check_diag_loop
+
+			call diag_desc
+			addi s6, s6, 20
+			call diag_asc
+			addi s6, s6, 4
+
+			addi s5, s5, 1
+			j check_diag_loop
+
+end_check_diag_loop:
+			mv ra, a5
+			ret
+
+# ======================== CHECK DESCENDING DIAGONAL ===========================
+diag_desc:
+			li a6, 0
+			li s3, 6
+			li t4, 1 # t4 <- last player
+			li s2, 0 # s2 <- consecutive player cell
+
+diag_desc_loop:
+			beq a6, s3, end_diag_desc_loop
+
+			li s0, 28
+			mul s0, a6, s0
+			add s0, s0, s6
+			lw s0, 0(s0)
+
+			beq s0, zero, diag_desc_reset_count
+			beq s0, t4, diag_desc_skip_change_player
+
+			li t2, 1
+			beq t4, t2, diag_desc_change_to_two
+			li t4, 1
+			j diag_desc_end_swap_if
+diag_desc_change_to_two:
+			li t4, 2
+diag_desc_end_swap_if:
+			li s2, 0
+
+diag_desc_skip_change_player:
+			addi s2, s2, 1
+			li t2, 4
+			beq s2, t2, current_player_win
+			j skip_diag_desc_cell
+
+diag_desc_reset_count:
+			li s2, 0
+
+skip_diag_desc_cell:
+			addi a6, a6, 1
+			j diag_desc_loop
+
+end_diag_desc_loop:
+			ret
+
+# ======================== CHECK ASCENDING DIAGONAL ===========================
+diag_asc:
+			li a6, 0
+			li s3, 6
+			li t4, 1 # t4 <- last player
+			li s2, 0 # s2 <- consecutive player cell
+
+diag_asc_loop:
+			beq a6, s3, end_diag_asc_loop
+
+			li s0, 20
+			mul s0, a6, s0
+			add s0, s0, s6
+			lw s0, 0(s0)
+
+			beq s0, zero, diag_asc_reset_count
+			beq s0, t4, diag_skip_change_player
+
+			li t2, 1
+			beq t4, t2, diag_change_to_two
+			li t4, 1
+			j diag_end_swap_if
+diag_change_to_two:
+			li t4, 2
+diag_end_swap_if:
+			li s2, 0
+
+diag_skip_change_player:
+			addi s2, s2, 1
+			li t2, 4
+			beq s2, t2, current_player_win
+			j skip_diag_cell
+
+diag_asc_reset_count:
+			li s2, 0
+
+skip_diag_cell:
+			addi a6, a6, 1
+			j diag_asc_loop
+
+end_diag_asc_loop:
 			ret
 
 # ======================== CURRENT PLAYER WINS ===========================
