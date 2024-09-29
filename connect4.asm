@@ -576,8 +576,8 @@ check_end:
 			mv t0, ra
 
 			call check_tie
-			call check_cols
-			call check_rows
+			# call check_cols
+			# call check_rows
 			call check_diag
 
 			mv ra, t0
@@ -726,9 +726,11 @@ end_check_row_loop:
 check_diag:
 			mv a5, ra
 
-			li s5, 0
+			li s5, -2
 
-			mv s6, s10 # s6 <- board address
+			li a7, 24
+			mul a7, s5, a7
+			add s6, s10, a7 # s6 <- board address
 
 check_diag_loop:
 			li t2, 3
@@ -737,23 +739,14 @@ check_diag_loop:
 			beq s5, t2, end_check_diag_loop
 
 			call diag_desc
-			la a0, space
-			li a7, 4
-			ecall
 			addi s6, s6, 20
 			call diag_asc
-			la a0, space
-			li a7, 4
-			ecall
 			addi s6, s6, 4
 
 			addi s5, s5, 1
 			j check_diag_loop
 
 end_check_diag_loop:
-			la a0, linebreak
-			li a7, 4
-			ecall
 			mv ra, a5
 			ret
 
@@ -774,7 +767,9 @@ diag_desc_loop:
 			# address should not exceed 212 of displacement
 			sub s4, s0, s10
 			li a7, 212
+
 			bgt s4, a7, skip_diag_desc_cell
+			blt s4, zero, skip_diag_desc_cell
 
 			lw s0, 0(s0)
 
@@ -823,13 +818,11 @@ diag_asc_loop:
 			# address should not exceed 212 of displacement
 			sub s4, s0, s10
 			li a7, 212
-			bgt s4, a7, skip_diag_desc_cell
-			
-			lw s0, 0(s0)
 
-			mv a0, s0
-			li a7, 1
-			ecall
+			bgt s4, a7, skip_diag_cell
+			blt s4, zero, skip_diag_cell
+
+			lw s0, 0(s0)
 
 			beq s0, zero, diag_asc_reset_count
 			beq s0, t4, diag_skip_change_player
