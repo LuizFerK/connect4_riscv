@@ -514,7 +514,7 @@ check_end:
 			mv t0, ra
 
 			call check_tie
-			call check_col
+			call check_cols
 			# outras verificacoes
 
 			mv ra, t0
@@ -548,6 +548,22 @@ tie:
 
 			j main
 
+check_cols:
+			mv s11, ra
+			li a4, 0
+col_loop:
+			beq a4, s8, end_cool_loop
+			li s6, 24
+			mul s6, a4, s6
+			add s6, s6, s10
+			call check_col
+
+			addi a4, a4, 1
+			j col_loop
+end_cool_loop:
+			mv ra, s11
+			ret
+
 check_col:
 			li t1, 0 # t1 <- current row
 			li a5, 6 # a5 <- rows
@@ -559,7 +575,7 @@ check_col_loop:
 			beq t1, a5, end_check_col_loop
 
 			mul t2, t1, a6
-			add t2, t2, s10
+			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the column
 
 			mv a0, s2
