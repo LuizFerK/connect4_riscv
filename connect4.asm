@@ -16,7 +16,7 @@ medium_text:		.asciz		"Médio"
 choose_column:	.asciz		"\nEscolha uma coluna: "
 column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
 tie_text:			.asciz		"\nEmpate!\n"
-player_text:			.asciz		"\O jogador "
+player_text:			.asciz		"\nO jogador "
 win_text:			.asciz		" venceu!\n"
 linebreak:		.asciz		"\n"
 space:			.asciz		" "
@@ -549,33 +549,37 @@ tie:
 			j main
 
 check_col:
-			li t1, 0
-			li t3, 6
+			li t1, 0 # t1 <- current row
+			li a5, 6 # a5 <- rows
 			li t4, 1 # t4 <- last player
-			li t6, 2 # t6 <- player to swap
-			li t5, 0 # t5 <- consecutive player cell
+			li s2, 0 # s2 <- consecutive player cell
 			li a6, 4
 
 check_col_loop:
-			beq t1, t3, end_check_col_loop
-			beq t5, a6, current_player_win
+			beq t1, a5, end_check_col_loop
 
-			add t2, t1, t1
-			add t2, t2, t2
+			mul t2, t1, a6
 			add t2, t2, s10
 			lw t2, 0(t2) # t2 <- current value of the column
 
+			mv a0, s2
+			li a7, 1
+			ecall
 			beq t2, zero, skip_col_cell
-
 			beq t2, t4, skip_change_player
 
-			# swap current player
-			mv a5, t4
-			mv t4, t6
-			mv t6, a5
+			li a7, 1
+			beq t4, a7, change_to_two
+			li t4, 1
+			j end_swap_if
+change_to_two:
+			li t4, 2
+end_swap_if:
+			li s2, 0
 
 skip_change_player:
-			addi t5, t5, 1
+			addi s2, s2, 1
+			beq s2, a6, current_player_win
 skip_col_cell:
 			addi t1, t1, 1
 			j check_col_loop
@@ -594,11 +598,10 @@ current_player_win:
 			li a7, 1
 			ecall
 			la a0, win_text
-			li a7, 1
+			li a7, 4
 			ecall
 
 			j main
-
 
 # ======================== END ===========================
 end:
