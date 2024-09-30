@@ -18,7 +18,9 @@ board_7x6_text:		.asciz		"Tabuleiro 7x6"
 difficulty_text:	.asciz		"\nEscolha a dificuldade:\n\n1 - Fácil\n2 - Médio\n\nOpção: "
 easy_text:		.asciz		"Fácil"
 medium_text:		.asciz		"Médio"
-choose_column:	.asciz		"\nEscolha uma coluna: "
+choose_column:	.asciz		"\nEscolha uma coluna (Jogador "
+choose_column2:	.asciz		"): "
+bot_column:	.asciz		"\nO bot escolheu a coluna "
 column_full_text:		.asciz		"\nColuna cheia, escolha novamente!\n"
 tie_text:			.asciz		"\nEmpate!\n"
 player_text:			.asciz		"\nO jogador "
@@ -321,6 +323,12 @@ round_loop:
 			la a0, choose_column
 			li a7, 4
 			ecall
+			mv a0, a2
+			li a7, 1
+			ecall
+			la a0, choose_column2
+			li a7, 4
+			ecall
 			li a7, 5
 			ecall
 			# a0 <- column index
@@ -582,10 +590,24 @@ bot_round_rand_num:
 			bne t2, zero, bot_round_rand_num
 
 			mv a3, a0
+
+			la a0, bot_column
+			li a7, 4
+			ecall
+			mv a0, a3
+			li a7, 1
+			ecall
+			la a0, linebreak
+			li a7, 4
+			ecall
+
 			li a2, 2 # bot plays as player 2
 			mv a1, t1
 			mv a0, t0
 			call round
+
+			
+
 			call setup_print_board
 
 			li a2, 1 # after the bot play, switch back to player 1
@@ -669,7 +691,7 @@ check_col_loop:
 			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the column
 
-			beq t2, zero, skip_col_cell
+			beq t2, zero, reset_col_count
 			beq t2, t4, col_skip_change_player
 
 			li a7, 1
@@ -684,6 +706,11 @@ col_end_swap_if:
 col_skip_change_player:
 			addi s2, s2, 1
 			beq s2, a6, current_player_win
+			j skip_col_cell
+
+reset_col_count:
+			li s2, 0
+
 skip_col_cell:
 			addi t1, t1, 1
 			j check_col_loop
@@ -724,7 +751,7 @@ check_row_loop:
 			add t2, t2, s6
 			lw t2, 0(t2) # t2 <- current value of the rowumn
 
-			beq t2, zero, skip_row_cell
+			beq t2, zero, reset_row_count
 			beq t2, t4, skip_change_player
 
 			li a7, 1
@@ -739,6 +766,11 @@ end_swap_if:
 skip_change_player:
 			addi s2, s2, 1
 			beq s2, a6, current_player_win
+			j skip_row_cell
+
+reset_row_count:
+			li s2, 0
+
 skip_row_cell:
 			addi t1, t1, 1
 			j check_row_loop
